@@ -1,76 +1,95 @@
-<p align="center">
-  <a href="https://pi.dev">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://pi.dev/logo.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://huggingface.co/buckets/julien-c/my-training-bucket/resolve/pi-logo-dark.svg">
-      <img alt="pi logo" src="https://pi.dev/logo.svg" width="128">
-    </picture>
-  </a>
-</p>
-<p align="center">
-  <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-  <a href="https://github.com/badlogic/pi-mono/actions/workflows/ci.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/badlogic/pi-mono/ci.yml?style=flat-square&branch=main" /></a>
-</p>
-<p align="center">
-  <a href="https://pi.dev">pi.dev</a> domain graciously donated by
-  <br /><br />
-  <a href="https://exe.dev"><img src="packages/coding-agent/docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
-</p>
+# PoiClaw
 
-> New issues and PRs from new contributors are auto-closed by default. Maintainers review auto-closed issues daily. See [CONTRIBUTING.md](CONTRIBUTING.md).
+基于 [pi-mono](https://github.com/badlogic/pi-mono) 二次开发的自研 AI Coding Agent。
 
----
+## 项目简介
 
-# Pi Monorepo
+PoiClaw 是一个 AI 编程助手，能够读取文件、执行命令、修改代码和编写新文件。它支持通过自定义 API 端点接入任意兼容 Anthropic 协议的 LLM 服务。
 
-> **Looking for the pi coding agent?** See **[packages/coding-agent](packages/coding-agent)** for installation and usage.
+## 架构设计
 
-Tools for building AI agents and managing LLM deployments.
-
-## Share your OSS coding agent sessions
-
-If you use pi or other coding agents for open source work, please share your sessions.
-
-Public OSS session data helps improve coding agents with real-world tasks, tool use, failures, and fixes instead of toy benchmarks.
-
-For the full explanation, see [this post on X](https://x.com/badlogicgames/status/2037811643774652911).
-
-To publish sessions, use [`badlogic/pi-share-hf`](https://github.com/badlogic/pi-share-hf). Read its README.md for setup instructions. All you need is a Hugging Face account, the Hugging Face CLI, and `pi-share-hf`.
-
-You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `pi-mono` sessions.
-
-I regularly publish my own `pi-mono` work sessions here:
-
-- [badlogicgames/pi-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/pi-mono)
-
-## Packages
-
-| Package | Description |
-|---------|-------------|
-| **[@mariozechner/pi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
-| **[@mariozechner/pi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
-| **[@mariozechner/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
-| **[@mariozechner/pi-mom](packages/mom)** | Slack bot that delegates messages to the pi coding agent |
-| **[@mariozechner/pi-tui](packages/tui)** | Terminal UI library with differential rendering |
-| **[@mariozechner/pi-web-ui](packages/web-ui)** | Web components for AI chat interfaces |
-| **[@mariozechner/pi-pods](packages/pods)** | CLI for managing vLLM deployments on GPU pods |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).
-
-## Development
-
-```bash
-npm install          # Install all dependencies
-npm run build        # Build all packages
-npm run check        # Lint, format, and type check
-./test.sh            # Run tests (skips LLM-dependent tests without API keys)
-./pi-test.sh         # Run pi from sources (can be run from any directory)
+```text
+┌──────────────────┐
+│   coding-agent    │  ← 终端入口、工具定义、会话管理
+└────────┬─────────┘
+         │
+┌────────▼─────────┐
+│   agent-core      │  ← Agent 循环引擎：LLM → 工具 → LLM
+└────────┬─────────┘
+         │
+┌────────▼─────────┐
+│      ai           │  ← 统一 LLM API（支持多 provider）
+└────────┬─────────┘
+         │
+┌────────▼─────────┐
+│   LLM 服务提供商    │  ← 自定义 API 端点（如中科大 LLM 平台）
+└──────────────────┘
 ```
 
-> **Note:** `npm run check` requires `npm run build` to be run first. The web-ui package uses `tsc` which needs compiled `.d.ts` files from dependencies.
+## 与 pi-mono 的区别
 
-## License
+- 新增 `ANTHROPIC_BASE_URL` 环境变量，支持自定义 API 端点
+- 修改 Anthropic provider 支持 `authToken` 认证方式，适配兼容 API
+- 适配自托管 / 自定义 LLM 提供商
 
-MIT
+## 技术栈
+
+- TypeScript
+- Node.js (>= 20)
+- Anthropic SDK
+- pm2（长期进程管理）
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 20
+- 一个兼容 OpenAI 或 Anthropic API 格式的 LLM 服务
+
+### 安装
+
+```bash
+git clone https://github.com/2291423154/PoiClaw.git
+cd PoiClaw
+git checkout 3ffc2b43
+npm install
+npm run build
+```
+
+### 使用
+
+```bash
+cd packages/coding-agent
+
+# 设置环境变量
+export ANTHROPIC_API_KEY="你的API密钥"
+export ANTHROPIC_BASE_URL="你的API地址"
+
+# 交互模式
+node dist/cli.js --provider anthropic --model 你的模型ID
+
+# 非交互模式（一问一答）
+node dist/cli.js --provider anthropic --model 你的模型ID -p "你的问题"
+```
+
+## 内置工具
+
+| 工具 | 说明 |
+| --- | --- |
+| `read` | 读取文件内容 |
+| `write` | 创建或覆盖文件 |
+| `edit` | 精确替换文件中的文本 |
+| `bash` | 执行 Shell 命令 |
+| `grep` | 搜索文件内容（只读，默认关闭） |
+| `find` | 按模式查找文件（只读，默认关闭） |
+| `ls` | 列出目录内容（只读，默认关闭） |
+
+## 为什么 4 个工具就够了？
+
+顶级 LLM 已经经过强化学习（RL），天然理解工具调用。不需要 LangChain、Dify 等重量级框架。pi-mono 作者 Mario Zechner 在他的博客中提到：
+
+> "默认只保留 4 个工具（read、write、edit、bash），其他只读工具按需开启。模型已经会用了，不需要额外的框架。"
+
+## 许可证
+
+本项目基于 [pi-mono](https://github.com/badlogic/pi-mono) 二次开发。原项目采用 AGPL-3.0 许可证。
