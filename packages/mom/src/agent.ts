@@ -25,6 +25,8 @@ import { createMomTools, setUploadFunction } from "./tools/index.js";
 
 // Hardcoded model for now - TODO: make configurable (issue #63)
 const model = getModel("anthropic", "claude-sonnet-4-5");
+model.id = process.env.ANTHROPIC_MODEL_ID || "claude-sonnet-4-5";
+if (process.env.ANTHROPIC_BASE_URL) model.baseUrl = process.env.ANTHROPIC_BASE_URL;
 
 export interface PendingMessage {
 	userName: string;
